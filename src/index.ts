@@ -3,8 +3,6 @@ import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 import path from 'path';
 import { getAccessToken } from './line/token';
-import axios from 'axios';
-
 const app = express();
 const port = process.env.PORT || 8080;
 
@@ -12,14 +10,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const openApiSpec = YAML.load(path.join(__dirname, '../static/line-messaging-api.yml'));
-// const openApiSpec = YAML.load(path.join(__dirname, '../static/hoge.yml'));
+
 const swaggerOptions = {
   swaggerOptions: {
-    persistAuthorization: true,
     displayRequestDuration: true,
     tryItOutEnabled: true,
     requestSnippetsEnabled: true,
-    url: '/',
     defaultModelRendering: 'model',
     defaultModelsExpandDepth: 1,
     defaultModelExpandDepth: 1,
@@ -37,57 +33,42 @@ app.use((req, res, next) => {
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, swaggerOptions));
 
-// テスト用APIエンドポイントを追加
-app.get('/test-api/:a/:b', (req, res) => {
-  console.log('Test API called');
-  const a = parseInt(req.params.a);
-  const b = parseInt(req.params.b);
-  res.json({
-    message: 'Test API works!',
-    input: {
-      a: a,
-      b: b
-    },
-    sum: a + b,
-    timestamp: new Date().toISOString()
-  });
-});
-
 // プロキシエンドポイントの実装
 app.use('/line-proxy/*', async (req, res) => {
-  console.log('Line proxy called');
-  console.log(req);
   try {
-    // アクセストークンを取得
     const accessToken = await getAccessToken();
-    
-    // LINE APIのベースURL
-    const LINE_API_BASE = 'https://api.line.me/v2';
-    
-    // プロキシパスを取得（/line-proxy/を除去）
-    const targetPath = req.url.replace('/line-proxy', '');
-    
-    // LINEのAPIにリクエストを転送
-    const response = await axios({
+    const LINE_API_BASE = 'https://api.line.me';
+
+    const targetPath = req.originalUrl.replace('/line-proxy', '');
+
+    const response = await fetch(`${LINE_API_BASE}${targetPath}`, {
       method: req.method,
-      url: `${LINE_API_BASE}${targetPath}`,
       headers: {
         'Authorization': `Bearer ${accessToken}`,
-        ...req.headers,
-        host: 'api.line.me'
+        'Content-Type': 'application/json'
       },
-      data: req.body
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body)
     });
 
-    // レスポンスを返す
-    res.status(response.status).json(response.data);
+    const data = await response.json();
+
+    res.status(response.status).json(data);
   } catch (error: any) {
     console.error('Proxy error:', error);
-    res.status(error.response?.status || 500).json({
-      error: error.message,
-      details: error.response?.data
+    res.status(error.status || 500).json({
+      error: error.message
     });
   }
+});
+
+// Webhook エンドポイント
+app.post('/webhook', (req, res) => {
+  console.log('Webhook received:');
+  console.log('Headers:', req.headers);
+  console.log('Body:', JSON.stringify(req.body, null, 2));
+  
+  // LINE Webhookの仕様に従って200を返す
+  res.status(200).end();
 });
 
 app.listen(port, () => {

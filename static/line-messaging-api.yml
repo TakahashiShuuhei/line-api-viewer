@@ -7,6 +7,7 @@ info:
     This document describes LINE Messaging API.
 
 servers:
+  - url: "https://line-bot-dot-gcp-dev-161714.an.r.appspot.com/line-proxy"
   - url: "https://api.line.me"
   - url: "http://localhost:8080/line-proxy"
 
