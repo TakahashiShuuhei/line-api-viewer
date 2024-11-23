@@ -1,0 +1,11 @@
+runtime: nodejs20
+
+service: line-bot
+
+env_variables:
+  GOOGLE_CLOUD_PROJECT: "gcp-dev-161714"
+  CHANNEL_ID: "2002703922"
+
+handlers:
+  - url: /.*
+    script: auto

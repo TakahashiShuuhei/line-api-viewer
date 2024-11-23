@@ -1,0 +1,56 @@
+openapi: 3.0.0
+info:
+  title: Test API
+  version: 1.0.0
+  description: Simple test API for debugging Swagger UI integration
+
+servers:
+  - url: /
+    description: Local development server
+
+paths:
+  /test-api/{a}/{b}:
+    get:
+      summary: Add two numbers
+      description: Takes two numbers as path parameters and returns their sum
+      operationId: addNumbers
+      parameters:
+        - name: a
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: First number to add
+        - name: b
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Second number to add
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Test API works!"
+                  input:
+                    type: object
+                    properties:
+                      a:
+                        type: integer
+                        example: 5
+                      b:
+                        type: integer
+                        example: 3
+                  sum:
+                    type: integer
+                    example: 8
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-03-20T12:34:56.789Z"
